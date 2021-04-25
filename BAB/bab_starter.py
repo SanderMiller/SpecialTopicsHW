@@ -61,7 +61,6 @@ class BBTreeNode():
         n2.prob.add_constraint( branch_var >= math.ceil(branch_var.value) ) # add in the new binary constraint
         return n2
 
-
     def bbsolve(self):
         '''
         Use the branch and bound method to solve an integer program
@@ -79,8 +78,37 @@ class BBTreeNode():
         bestres = -1e20 # a small arbitrary initial best objective value
         bestnode_vars = root.vars # initialize bestnode_vars to the root vars
 
-        #TODO: fill this part in
+        #While the heap is non-empty
+        while(len(heap)>0):
 
+            #Pop off current problem
+            currRes, currCount, currProb = hq.heappop(heap)
+
+            #Try solving current problem
+            try:
+                res = currProb.prob.solve(solver='cvxopt')
+
+            except:
+                pass
+
+            #Base case, if all are integers return
+            if currProb.is_integral():
+                return bestres, bestnode_vars
+
+            #Otherwise recursively build heap
+            else:
+                
+                for var in currProb.vars:
+                    #Check if a given variable is an integer
+                    if var.value == None or abs(round(var.value) - float(var.value)) > 1e-4 :
+
+                        #If not an integer generate floor and ceiling case children
+                        child1 = currProb.branch_ceil(var)
+                        child2 = currProb.branch_floor(var)
+
+                        #Push new cases and corresponding variables to the heap
+                        hq.heappush(heap,(child1.vars, next(counter),child1))
+                        hq.heappush(heap,(child2.vars, next(counter),child2))
+                        break
         
-        return bestres, bestnode_vars
- 
+
